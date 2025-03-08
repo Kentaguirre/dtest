@@ -1,0 +1,56 @@
+function updateSectionColumnTotals() {
+    let sectionColumnTotals = {};
+
+    // Initialize an empty array for each section
+    sections.forEach(sec => {
+        sectionColumnTotals[sec] = Array(cols).fill(0);
+    });
+
+    // Iterate through all respondents to compute column totals per section
+    for (let i = 0; i < rows; i++) {
+        let section = document.getElementById(`section-${i}`).value;
+        if (section) {
+            for (let j = 0; j < cols; j++) {
+                let value = Number(document.getElementById(`cell-${i}-${j}`).value) || 0;
+                sectionColumnTotals[section][j] += value;
+            }
+        }
+    }
+
+    // Create table structure
+    let tableHTML = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>strongly agree</th>
+                                <th>agree</th>
+                                <th>undiceded</th>
+                                <th>disagree</th>
+                                <th>strongly disagree</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+    // Populate table with computed totals
+    Object.entries(sectionColumnTotals)
+        .filter(([_, totals]) => totals.some(v => v > 0))
+        .forEach(([section, totals]) => {
+            tableHTML += `<tr>
+                            <td><strong>${section}</strong></td>
+                            <td>${totals[0]}</td>
+                            <td>${totals[1]}</td>
+                            <td>${totals[2]}</td>
+                            <td>${totals[3]}</td>
+                            <td>${totals[4]}</td>
+                          </tr>`;
+        });
+
+    tableHTML += `</tbody></table>`;
+
+    // Display the table
+    document.getElementById('section-column-totals').innerHTML = tableHTML;
+}
+
+// Attach function to update totals dynamically
+document.addEventListener('input', updateSectionColumnTotals);
+document.addEventListener('change', updateSectionColumnTotals);
