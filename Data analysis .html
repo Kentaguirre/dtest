@@ -1,0 +1,311 @@
+<!DOCTYPE html>  <html lang="en">  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+    <title>ANOVA Data Analysis</title>  
+    <style>  
+        table { border-collapse: collapse; margin-top: 10px; width: 100%; }  
+        th, td { border: 1px solid black; padding: 5px; text-align: center; }  
+        input, select { width: 80px; text-align: center; }  
+        .scrollable { height: 400px; overflow: auto; display: block; }  
+        .total-row { font-weight: bold; background-color: #f2f2f2; }  
+        .overall-total { font-weight: bold; background-color: #ccc; }  
+    </style>  
+</head>  
+<body>  
+    <h2> </h2>  
+    <p>Enter values into the table below:</p>  <div class="scrollable">  
+    <table id="dataTable">  
+        <thead>  
+            <tr>  
+                <th>Respondent</th>  
+                <th>Section</th>  
+                <th>Gender</th>  
+                <th>Age</th>  
+                <th>strongly agree</th>  
+                <th>agree</th>  
+                <th>undecided</th>  
+                <th>disagree</th>  
+                <th>strongly disagree</th>  
+            </tr>  
+        </thead>  
+        <tbody></tbody>  
+        <tfoot>  
+            <!-- Section & Gender Totals -->  
+            <tr class="total-row">  
+                <td><strong>Total</strong></td>  
+                <td><strong>Sections Used:</strong> <span id="total-sections">0</span></td>  
+                <td>  
+                    <strong>Male:</strong> <span id="total-male">0</span> <br>  
+                    <strong>Female:</strong> <span id="total-female">0</span>  
+                </td>  
+                <td><strong>Average Age:</strong> <span id="average-age">0</span></td>  
+                <td id="total-col-0">0</td>  
+                <td id="total-col-1">0</td>  
+                <td id="total-col-2">0</td>  
+                <td id="total-col-3">0</td>  
+                <td id="total-col-4">0</td>  
+            </tr>  
+
+            <!-- Section Totals -->  
+            <tr class="total-row">  
+                <td colspan="9">  
+                    <strong>Respondents Per Section:</strong> <br>  
+                    <span id="section-totals"></span>  
+                </td>  
+            </tr>
+
+<!-- Section-wise Column Totals -->  <tr class="total-row">  
+    <td colspan="9">  
+        <strong>Column Totals Per Section:</strong> <br>  
+        <pre id="section-column-totals"></pre>  
+    </td>  
+</tr>  
+                <!-- Overall Total -->  
+                <tr class="overall-total">  
+                    <td colspan="4"><strong>Overall Total:</strong></td>  
+                    <td id="overall-total">0</td>  
+                </tr>  
+            </tfoot>  
+        </table>  
+    </div>  <script>  
+    const rows = 234;  
+    const cols = 5;  
+    const sections = ["Kamagong", "Molave", "Narra", "Talisay", "Dao", "Ardisia", "Lawan", "Almaciga", "Section I", "Gmelina"];  
+
+    function generateTable() {  
+        let table = document.getElementById('dataTable').getElementsByTagName('tbody')[0];  
+        for (let i = 0; i < rows; i++) {  
+            let row = table.insertRow();  
+            let respondentCell = row.insertCell();  
+            respondentCell.innerText = `Respondent ${i + 1}`;  
+
+            // Section dropdown  
+            let sectionCell = row.insertCell();  
+            let sectionSelect = document.createElement("select");  
+            sectionSelect.id = `section-${i}`;  
+            sectionSelect.innerHTML = `<option value="">Select</option>` +   
+                sections.map(sec => `<option value="${sec}">${sec}</option>`).join("");  
+            sectionSelect.onchange = updateSectionTotals;  
+            sectionCell.appendChild(sectionSelect);  
+
+            // Gender dropdown  
+            let genderCell = row.insertCell();  
+            let genderSelect = document.createElement("select");  
+            genderSelect.id = `gender-${i}`;  
+            genderSelect.innerHTML = `  
+                <option value="">Select</option>  
+                <option value="Male">Male</option>  
+                <option value="Female">Female</option>  
+            `;  
+            genderSelect.onchange = updateGenderTotals;  
+            genderCell.appendChild(genderSelect);  
+
+            // Age input  
+            let ageCell = row.insertCell();  
+            let ageInput = document.createElement("input");  
+            ageInput.type = "number";  
+            ageInput.id = `age-${i}`;  
+            ageInput.oninput = updateAgeStats;  
+            ageCell.appendChild(ageInput);  
+
+            // Data inputs  
+            for (let j = 0; j < cols; j++) {  
+                let cell = row.insertCell();  
+                let input = document.createElement("input");  
+                input.type = "number";  
+                input.id = `cell-${i}-${j}`;  
+                input.oninput = updateTotals;  
+                cell.appendChild(input);  
+            }  
+        }  
+    }  
+
+    function updateTotals() {  
+        let overallTotal = 0;  
+
+        for (let j = 0; j < cols; j++) {  
+            let sum = 0;  
+            for (let i = 0; i < rows; i++) {  
+                let value = document.getElementById(`cell-${i}-${j}`).value;  
+                sum += Number(value) || 0;  
+            }  
+            document.getElementById(`total-col-${j}`).innerText = sum;  
+            overallTotal += sum;  
+        }  
+
+        document.getElementById('overall-total').innerText = overallTotal;  
+    }  
+
+    function updateGenderTotals() {  
+        let maleCount = 0;  
+        let femaleCount = 0;  
+
+        for (let i = 0; i < rows; i++) {  
+            let gender = document.getElementById(`gender-${i}`).value;  
+            if (gender === "Male") maleCount++;  
+            if (gender === "Female") femaleCount++;  
+        }  
+
+        document.getElementById('total-male').innerText = maleCount;  
+        document.getElementById('total-female').innerText = femaleCount;  
+    }  
+
+    function updateAgeStats() {  
+        let totalAge = 0;  
+        let count = 0;  
+
+        for (let i = 0; i < rows; i++) {  
+            let age = document.getElementById(`age-${i}`).value;  
+            if (age) {  
+                totalAge += Number(age);  
+                count++;  
+            }  
+        }  
+
+        let avgAge = count > 0 ? (totalAge / count).toFixed(2) : 0;  
+        document.getElementById('average-age').innerText = avgAge;  
+    }  
+
+    function updateSectionTotals() {  
+        let sectionCounts = {};  
+        sections.forEach(sec => sectionCounts[sec] = 0);  
+
+        for (let i = 0; i < rows; i++) {  
+            let section = document.getElementById(`section-${i}`).value;  
+            if (section) sectionCounts[section]++;  
+        }  
+
+        let sectionText = Object.entries(sectionCounts)  
+            .filter(([_, count]) => count > 0)  
+            .map(([sec, count]) => `${sec}: ${count}`)  
+            .join(", ");  
+
+        document.getElementById('section-totals').innerText = sectionText;  
+        document.getElementById('total-sections').innerText = Object.values(sectionCounts).filter(c => c > 0).length;  
+    }  
+
+    // Generate table on page load  
+    window.onload = generateTable;  
+</script>
+
+</body>  
+</html> 
+
+<ALOASK-SEPARATE-EDITORS>
+body {
+    font-family: 'Arial', sans-serif;
+    background: #f4f4f4;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.scrollable {
+    height: 80vh;
+    overflow: auto;
+    display: block;
+    width: 90%;
+}
+
+table {
+    border-collapse: collapse;
+    margin-top: 10px;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid black;
+    padding: 5px;
+    text-align: center;
+}
+
+input, select {
+    width: 80px;
+    text-align: center;
+}
+
+.total-row {
+    font-weight: bold;
+    background-color: #f2f2f2;
+}
+
+.overall-total {
+    font-weight: bold;
+    background-color: #ccc;
+}
+
+#dataTable {
+    display: block;
+}
+
+#dataTable thead {
+    position: sticky;
+    top: 0;
+    background-color: #f4f4f4;
+}
+
+h2 {
+    margin-top: 0;
+}
+<ALOASK-SEPARATE-EDITORS>function updateSectionColumnTotals() {
+    let sectionColumnTotals = {};
+
+    // Initialize an empty array for each section
+    sections.forEach(sec => {
+        sectionColumnTotals[sec] = Array(cols).fill(0);
+    });
+
+    // Iterate through all respondents to compute column totals per section
+    for (let i = 0; i < rows; i++) {
+        let section = document.getElementById(`section-${i}`).value;
+        if (section) {
+            for (let j = 0; j < cols; j++) {
+                let value = Number(document.getElementById(`cell-${i}-${j}`).value) || 0;
+                sectionColumnTotals[section][j] += value;
+            }
+        }
+    }
+
+    // Create table structure
+    let tableHTML = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>strongly agree</th>
+                                <th>agree</th>
+                                <th>undiceded</th>
+                                <th>disagree</th>
+                                <th>strongly disagree</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+    // Populate table with computed totals
+    Object.entries(sectionColumnTotals)
+        .filter(([_, totals]) => totals.some(v => v > 0))
+        .forEach(([section, totals]) => {
+            tableHTML += `<tr>
+                            <td><strong>${section}</strong></td>
+                            <td>${totals[0]}</td>
+                            <td>${totals[1]}</td>
+                            <td>${totals[2]}</td>
+                            <td>${totals[3]}</td>
+                            <td>${totals[4]}</td>
+                          </tr>`;
+        });
+
+    tableHTML += `</tbody></table>`;
+
+    // Display the table
+    document.getElementById('section-column-totals').innerHTML = tableHTML;
+}
+
+// Attach function to update totals dynamically
+document.addEventListener('input', updateSectionColumnTotals);
+document.addEventListener('change', updateSectionColumnTotals);
