@@ -1,43 +1,57 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+function updateSectionColumnTotals() {
+    let sectionColumnTotals = {};
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+    // Initialize an empty array for each section
+    sections.forEach(sec => {
+        sectionColumnTotals[sec] = Array(cols).fill(0);
+    });
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+    // Iterate through all respondents to compute column totals per section
+    for (let i = 0; i < rows; i++) {
+        let section = document.getElementById(`section-${i}`).value;
+        if (section) {
+            for (let j = 0; j < cols; j++) {
+                let value = Number(document.getElementById(`cell-${i}-${j}`).value) || 0;
+                sectionColumnTotals[section][j] += value;
+            }
+        }
+    }
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+    // Create table structure
+    let tableHTML = `<table border="1" style="border-collapse: collapse; width: 100%; text-align: center;">
+                        <thead>
+                            <tr>
+                                <th>Section</th>
+                                <th>strongly agree</th>
+                                <th>agree</th>
+                                <th>undiceded</th>
+                                <th>disagree</th>
+                                <th>strongly disagree</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+    // Populate table with computed totals
+    Object.entries(sectionColumnTotals)
+        .filter(([_, totals]) => totals.some(v => v > 0))
+        .forEach(([section, totals]) => {
+            tableHTML += `<tr>
+                            <td><strong>${section}</strong></td>
+                            <td>${totals[0]}</td>
+                            <td>${totals[1]}</td>
+                            <td>${totals[2]}</td>
+                            <td>${totals[3]}</td>
+                            <td>${totals[4]}</td>
+                          </tr>`;
+        });
 
-jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    tableHTML += `</tbody></table>`;
+
+    // Display the table
+    document.getElementById('section-column-totals').innerHTML = tableHTML;
+}
+
+// Attach function to update totals dynamically
+document.addEventListener('input', updateSectionColumnTotals);
+document.addEventListener('change', updateSectionColumnT
+otals);
